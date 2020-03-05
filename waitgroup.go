@@ -68,7 +68,8 @@ func (o *Options) Log(pattern string, args ...interface{}) {
 // Opts are the global options applied to all WaitGroups. Default is for logs
 // to go to STDERR. To change, set Opts.Logger once at the start of your app.
 var Opts = &Options{
-	Logger: os.Stderr,
+	Logger:      os.Stderr,
+	loggerMutex: &sync.Mutex{},
 }
 
 // WaitGroup is like sync.WaitGroup, but the Wait() has a timeout that tells you
@@ -84,6 +85,7 @@ func New() *WaitGroup {
 	return &WaitGroup{
 		wg:    &sync.WaitGroup{},
 		calls: make(map[string]int),
+		mu:    &sync.RWMutex{},
 	}
 }
 
