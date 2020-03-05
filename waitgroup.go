@@ -56,7 +56,7 @@ import (
 // one of these to choose your options.
 type Options struct {
 	Logger      io.Writer
-	loggerMutex *sync.Mutex
+	loggerMutex sync.Mutex
 }
 
 func (o *Options) Log(pattern string, args ...interface{}) {
@@ -68,8 +68,7 @@ func (o *Options) Log(pattern string, args ...interface{}) {
 // Opts are the global options applied to all WaitGroups. Default is for logs
 // to go to STDERR. To change, set Opts.Logger once at the start of your app.
 var Opts = &Options{
-	Logger:      os.Stderr,
-	loggerMutex: &sync.Mutex{},
+	Logger: os.Stderr,
 }
 
 // WaitGroup is like sync.WaitGroup, but the Wait() has a timeout that tells you
@@ -85,7 +84,6 @@ func New() *WaitGroup {
 	return &WaitGroup{
 		wg:    &sync.WaitGroup{},
 		calls: make(map[string]int),
-		mu:    &sync.RWMutex{},
 	}
 }
 
