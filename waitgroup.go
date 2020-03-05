@@ -55,6 +55,7 @@ import (
 // Options lets users specify options for WaitGroups. Set the Opts variable to
 // one of these to choose your options.
 type Options struct {
+	Disable     bool // Disables logging to give ~zero overhead compared to sync.WaitGroup
 	Logger      io.Writer
 	loggerMutex sync.Mutex
 }
@@ -90,6 +91,11 @@ func New() *WaitGroup {
 // Add is like sync.WaitGroup.Add(), but returns a key. The key must eventually
 // be passed to a corresponding Done() call if i was positive.
 func (w *WaitGroup) Add(i int) string {
+	if Opts.Disable {
+		w.wg.Add(i)
+		return ""
+	}
+
 	_, file, line, _ := runtime.Caller(1)
 	key := fmt.Sprintf("%s:%d", file, line)
 
@@ -102,6 +108,11 @@ func (w *WaitGroup) Add(i int) string {
 
 // Done is like sync.WaitGroup.Done(), but takes a key returned by Add().
 func (w *WaitGroup) Done(key string) {
+	if Opts.Disable {
+		w.wg.Done()
+		return
+	}
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.wg.Done()
@@ -126,6 +137,7 @@ func (w *WaitGroup) Wait(wait time.Duration) {
 				return
 			case <-limit:
 				w.LogNotDone()
+				return
 			}
 		}
 	}()
@@ -141,8 +153,8 @@ func (w *WaitGroup) LogNotDone() {
 	if len(w.calls) == 0 {
 		return
 	}
-	Opts.Log("\nWaitGroup currently waiting on:\n")
+	Opts.Log("\nWaitGroup currently waiting on these Add() calls to be Done():\n")
 	for key, n := range w.calls {
-		Opts.Log(" %s (%d outstanding)\n", key, n)
+		Opts.Log(" %s (%d not Done)\n", key, n)
 	}
 }
